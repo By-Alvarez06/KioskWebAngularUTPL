@@ -15,7 +15,7 @@ La aplicación está pensada para ejecutarse en un navegador en modo de pantalla
 
 - **[Angular](https://angular.dev/)**: Framework principal para el desarrollo de la aplicación.
 - **[TypeScript](https://www.typescriptlang.org/)**: Lenguaje de programación principal.
-- **[html5-qrcode](https://github.com/mebjas/html5-qrcode)**: Librería externa para acceder a la cámara y decodificar los códigos QR.
+- **[ngx-scanner-qrcode](https://www.npmjs.com/package/ngx-scanner-qrcode?activeTab=readme)**: Librería nativa de Angular para acceder a la cámara y decodificar los códigos QR.
 - **HTML5 y CSS**: Para la estructura y el estilo de la aplicación.
 
 ---
@@ -28,7 +28,7 @@ A continuación se describen los archivos y directorios más importantes para el
 /src
 ├── /app
 │   ├── /kiosk
-│   │   ├── **qr-login.component.ts**: Componente CRÍTICO. Contiene toda la lógica para activar la cámara, escanear el código QR y emitir el resultado. Utiliza la librería `html5-qrcode`.
+│   │   ├── **qr-login.component.ts**: Componente CRÍTICO. Contiene toda la lógica para activar la cámara, escanear el código QR y emitir el resultado. Utiliza la librería `ngx-scanner-qrcode`.
 │   │   ├── **kiosk.component.ts**: Componente principal de la interfaz del kiosco. Se muestra después de un login exitoso.
 │   │   ├── **kiosk.service.ts**: Servicio de Angular para manejar la lógica de negocio, como la validación del QR o la comunicación con un futuro backend.
 │   │   └── **kiosk.guard.ts**: Un "guardián" de rutas que podría usarse para proteger las páginas del kiosco, asegurando que solo se pueda acceder después de un login válido.
@@ -42,8 +42,7 @@ A continuación se describen los archivos y directorios más importantes para el
 │       └── **qr.jpg**: Imagen de ejemplo de un código QR para pruebas.
 │
 ├── **index.html**: El archivo HTML principal. La aplicación de Angular se carga aquí.
-├── **styles.css**: Estilos globales para toda la aplicación.
-└── **typings-html5-qrcode.d.ts**: Archivo de declaración de tipos de TypeScript. Es **esencial** para que TypeScript entienda la librería `html5-qrcode`, que es de Javascript, permitiendo su uso sin errores de compilación.
+└── **styles.css**: Estilos globales para toda la aplicación.
 ```
 
 ---
@@ -61,7 +60,7 @@ Sigue estos pasos para ejecutar el proyecto en un entorno de desarrollo local.
 
 1.  Clona o descarga el repositorio.
 2.  Abre una terminal en la raíz del proyecto.
-3.  Instala las dependencias del proyecto (incluyendo `html5-qrcode`):
+3.  Instala las dependencias del proyecto (incluyendo `ngx-scanner-qrcode`):
     ```bash
     npm install
     ```
@@ -81,7 +80,7 @@ Sigue estos pasos para ejecutar el proyecto en un entorno de desarrollo local.
 El componente `qr-login.component.ts` es el corazón de la funcionalidad de registro.
 
 1.  Al cargar, solicita permiso al navegador para acceder a la cámara del dispositivo.
-2.  Inicia la librería `html5-qrcode`, que muestra el video de la cámara en la interfaz.
+2.  Inicia la librería `ngx-scanner-qrcode`, que muestra el video de la cámara en la interfaz.
 3.  Cuando la librería detecta y decodifica un código QR válido, dispara un evento de éxito.
 4.  El componente captura la información del QR y la procesa (por ejemplo, redirigiendo al usuario a la pantalla principal del kiosco).
 
