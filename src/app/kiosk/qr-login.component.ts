@@ -136,10 +136,8 @@ export class QrLoginComponent implements OnInit, AfterViewInit {
             this.message = `QR escaneado: ${qrValue}`;
             this.kiosk.loginWithQr(qrValue);
             
-            // Stop scanner after successful scan
-            if (this.scanner && this.scanner.isStart) {
-              this.scanner.stop();
-            }
+            // DO NOT STOP SCANNER - keep it running for continuous scanning
+            // The scannedOnce flag prevents duplicate detections
             
             setTimeout(() => {
               this.message = `Bienvenido (ID): ${qrValue}`;
