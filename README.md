@@ -1,85 +1,98 @@
-# AngularProyect
+# Kiosco de Asistencia UTPL
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.8.
+Este proyecto es una aplicación de kiosco web desarrollada con Angular, diseñada para funcionar como un punto de registro de asistencia para estudiantes mediante el escaneo de códigos QR.
 
-## Development server
+La aplicación está pensada para ejecutarse en un navegador en modo de pantalla completa (modo kiosco), utilizando la cámara del dispositivo para identificar al usuario y registrar su asistencia.
 
-To start a local development server, run:
+## Características Principales
 
-```bash
-ng serve
+- **Login por Código QR**: Utiliza la cámara del dispositivo para escanear un código QR y autenticar al usuario.
+- **Interfaz de Kiosco**: La aplicación solicita automáticamente el modo de pantalla completa para una experiencia de usuario inmersiva y controlada.
+- **Gestión de Asistencia**: Lógica preparada para validar la información del QR y registrar la asistencia (actualmente simulado, requiere un backend para producción).
+- **Diseño Responsivo**: Adaptable a diferentes tamaños de pantalla, ideal para tablets o terminales de kiosco.
+
+## Tecnologías Utilizadas
+
+- **[Angular](https://angular.dev/)**: Framework principal para el desarrollo de la aplicación.
+- **[TypeScript](https://www.typescriptlang.org/)**: Lenguaje de programación principal.
+- **[html5-qrcode](https://github.com/mebjas/html5-qrcode)**: Librería externa para acceder a la cámara y decodificar los códigos QR.
+- **HTML5 y CSS**: Para la estructura y el estilo de la aplicación.
+
+---
+
+## Estructura del Proyecto
+
+A continuación se describen los archivos y directorios más importantes para el funcionamiento del kiosco.
+
+```
+/src
+├── /app
+│   ├── /kiosk
+│   │   ├── **qr-login.component.ts**: Componente CRÍTICO. Contiene toda la lógica para activar la cámara, escanear el código QR y emitir el resultado. Utiliza la librería `html5-qrcode`.
+│   │   ├── **kiosk.component.ts**: Componente principal de la interfaz del kiosco. Se muestra después de un login exitoso.
+│   │   ├── **kiosk.service.ts**: Servicio de Angular para manejar la lógica de negocio, como la validación del QR o la comunicación con un futuro backend.
+│   │   └── **kiosk.guard.ts**: Un "guardián" de rutas que podría usarse para proteger las páginas del kiosco, asegurando que solo se pueda acceder después de un login válido.
+│   │
+│   ├── **app.routes.ts**: Archivo de configuración de rutas. Define qué componente se carga para cada URL (por ejemplo, `/login`, `/kiosk`).
+│   └── **app.component.ts**: El componente raíz de la aplicación.
+│
+├── /public
+│   └── /img
+│       ├── **utpl.png**: Logo de la universidad.
+│       └── **qr.jpg**: Imagen de ejemplo de un código QR para pruebas.
+│
+├── **index.html**: El archivo HTML principal. La aplicación de Angular se carga aquí.
+├── **styles.css**: Estilos globales para toda la aplicación.
+└── **typings-html5-qrcode.d.ts**: Archivo de declaración de tipos de TypeScript. Es **esencial** para que TypeScript entienda la librería `html5-qrcode`, que es de Javascript, permitiendo su uso sin errores de compilación.
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+---
 
-## Modo Kiosk (Login por QR)
+## Puesta en Marcha
 
-Este proyecto incluye una interfaz básica de Kiosk pensada para operaciones controladas: el flujo principal es el login de estudiantes mediante escaneo de un código QR con la cámara.
+Sigue estos pasos para ejecutar el proyecto en un entorno de desarrollo local.
 
-Pasos para ejecutar en modo kiosk localmente:
+### Prerrequisitos
 
-1. Instalar dependencias (añadimos `html5-qrcode` para escanear desde la cámara):
+- Tener instalado [Node.js](https://nodejs.org/) (que incluye npm).
+- Tener instalado [Angular CLI](https://angular.dev/tools/cli) de forma global: `npm install -g @angular/cli`.
 
-```powershell
-npm install
-```
+### Instalación
 
-2. Iniciar la app:
+1.  Clona o descarga el repositorio.
+2.  Abre una terminal en la raíz del proyecto.
+3.  Instala las dependencias del proyecto (incluyendo `html5-qrcode`):
+    ```bash
+    npm install
+    ```
 
-```powershell
-npm start
-```
+### Ejecutar la Aplicación
 
-3. Abrir `http://localhost:4200/`. La ruta por defecto es la interfaz Kiosk que intentará solicitar pantalla completa y acceso a la cámara.
+1.  Ejecuta el siguiente comando para iniciar el servidor de desarrollo:
+    ```bash
+    ng serve
+    ```
+2.  Abre tu navegador y ve a `http://localhost:4200/`. La aplicación se recargará automáticamente si realizas cambios en los archivos fuente.
 
-Notas y recomendaciones:
-- El componente de escaneo usa la librería `html5-qrcode` cargada dinámicamente. Si el navegador no otorga permisos de cámara, mostrará un mensaje de error.
-- Para pruebas con dispositivos sin cámara puedes modificar `src/app/kiosk/qr-login.component.ts` para leer QR desde imágenes.
-- Esta implementación es una base; para producción se debe validar el contenido del QR contra un backend seguro y agregar mecanismos de bloqueo del navegador/OS más estrictos según el dispositivo kiosk.
+---
 
+## Funcionamiento Crítico: Escaneo QR
 
-## Code scaffolding
+El componente `qr-login.component.ts` es el corazón de la funcionalidad de registro.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+1.  Al cargar, solicita permiso al navegador para acceder a la cámara del dispositivo.
+2.  Inicia la librería `html5-qrcode`, que muestra el video de la cámara en la interfaz.
+3.  Cuando la librería detecta y decodifica un código QR válido, dispara un evento de éxito.
+4.  El componente captura la información del QR y la procesa (por ejemplo, redirigiendo al usuario a la pantalla principal del kiosco).
 
-```bash
-ng generate component component-name
-```
+**Nota importante**: Para que la cámara funcione, el sitio debe servirse a través de un contexto seguro (`localhost` o `https`). Si se accede a través de una IP de red local (ej. `192.168.1.100`), el navegador podría bloquear el acceso a la cámara por seguridad.
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+---
 
-```bash
-ng generate --help
-```
+## Comandos de Angular CLI
 
-## Building
+Este proyecto fue generado con [Angular CLI](https://github.com/angular/angular-cli). A continuación, algunos comandos útiles.
 
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- **Generar componentes**: `ng generate component nombre-componente`
+- **Compilar para producción**: `ng build` (los artefactos se guardan en `dist/`)
+- **Ejecutar tests unitarios**: `ng test`
