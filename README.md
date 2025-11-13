@@ -12,6 +12,32 @@ ng serve
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 
+## Modo Kiosk (Login por QR)
+
+Este proyecto incluye una interfaz básica de Kiosk pensada para operaciones controladas: el flujo principal es el login de estudiantes mediante escaneo de un código QR con la cámara.
+
+Pasos para ejecutar en modo kiosk localmente:
+
+1. Instalar dependencias (añadimos `html5-qrcode` para escanear desde la cámara):
+
+```powershell
+npm install
+```
+
+2. Iniciar la app:
+
+```powershell
+npm start
+```
+
+3. Abrir `http://localhost:4200/`. La ruta por defecto es la interfaz Kiosk que intentará solicitar pantalla completa y acceso a la cámara.
+
+Notas y recomendaciones:
+- El componente de escaneo usa la librería `html5-qrcode` cargada dinámicamente. Si el navegador no otorga permisos de cámara, mostrará un mensaje de error.
+- Para pruebas con dispositivos sin cámara puedes modificar `src/app/kiosk/qr-login.component.ts` para leer QR desde imágenes.
+- Esta implementación es una base; para producción se debe validar el contenido del QR contra un backend seguro y agregar mecanismos de bloqueo del navegador/OS más estrictos según el dispositivo kiosk.
+
+
 ## Code scaffolding
 
 Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
