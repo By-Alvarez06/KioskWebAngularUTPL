@@ -11,9 +11,20 @@ import { KioskService } from './kiosk.service';
     <div class="kiosk-root">
       <div class="wave-bg"></div>
       <header class="kiosk-header">
-        <h1>Verificación de Estudiantes</h1>
-        <p class="subtitle">Sistema de Control de Acceso QR</p>
-        <img class='imgLogo' src="img/utpl.png" alt="UTPL Logo">
+        <div class="container text-center">
+          <div class="row align-items-start">
+            <div class="col-3">
+              <img class='imgLogo' src="img/utpl.png" alt="UTPL Logo">
+            </div>
+            <div class="col-6">
+              <h1>Verificación de Estudiantes</h1>
+              <p class="subtitle">Sistema de Control de Acceso QR</p>
+            </div>
+            <div class="col-3">
+              <img class='imgLogo' src="img/xrlab1.png" alt="XRLab Logo">
+            </div>
+          </div>
+        </div>
       </header>
       
       <main class="kiosk-content">
@@ -58,8 +69,7 @@ import { KioskService } from './kiosk.service';
       }
 
       .imgLogo {
-        max-height: 60px;
-        margin-top: 10px;
+        max-height: 80px;
       }
       
       .kiosk-root {

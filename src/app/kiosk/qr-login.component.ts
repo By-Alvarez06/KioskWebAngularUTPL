@@ -2,7 +2,7 @@ import { Component, ViewChild, OnInit, AfterViewInit, Injector } from '@angular/
 import { CommonModule } from '@angular/common';
 import { isPlatformBrowser } from '@angular/common';
 import { PLATFORM_ID } from '@angular/core';
-import { NgxScannerQrcodeComponent } from 'ngx-scanner-qrcode';
+import { NgxScannerQrcodeComponent, ScannerQRCodeResult } from 'ngx-scanner-qrcode';
 import { KioskService } from './kiosk.service';
 
 @Component({
@@ -110,6 +110,7 @@ export class QrLoginComponent implements OnInit, AfterViewInit {
   message = 'Apunta la cámara al código QR del estudiante.';
   scannedOnce = false;
   isBrowser = false;
+  cedula: string | null = null;
 
   constructor(private kiosk: KioskService, private injector: Injector) {
     this.isBrowser = isPlatformBrowser(this.injector.get(PLATFORM_ID));
@@ -124,23 +125,27 @@ export class QrLoginComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    if (this.scanner && this.isBrowser && !this.scannedOnce) {
+    if (this.scanner && this.isBrowser) {
       // Subscribe to scanner data FIRST before starting
-      this.scanner.data.subscribe((results: any) => {
+      this.scanner.data.subscribe((results: ScannerQRCodeResult[]) => {
         if (results && results.length > 0 && !this.scannedOnce) {
           const firstResult = results[0];
           const qrValue = firstResult.value;
           
           if (qrValue && qrValue.trim().length > 0) {
             this.scannedOnce = true;
+            // Parsear el valor del QR para obtener solo el DNI
+            const dni = qrValue.split('#')[0];
+            this.cedula = dni;
+            console.log('Cédula escaneada y almacenada:', this.cedula);
             this.message = `QR escaneado: ${qrValue}`;
-            this.kiosk.loginWithQr(qrValue);
+            this.kiosk.loginWithQr(qrValue); // Se sigue enviando el valor completo al servicio
             
             // DO NOT STOP SCANNER - keep it running for continuous scanning
             // The scannedOnce flag prevents duplicate detections
             
             setTimeout(() => {
-              this.message = `Bienvenido (ID): ${qrValue}`;
+              this.message = `Bienvenido (ID): ${this.cedula}`;
             }, 500);
           }
         }
