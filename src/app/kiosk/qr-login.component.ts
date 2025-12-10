@@ -1,4 +1,4 @@
-import { Component, ViewChild, OnInit, AfterViewInit, Injector } from '@angular/core';
+import { Component, ViewChild, OnInit, AfterViewInit, Injector, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { isPlatformBrowser } from '@angular/common';
 import { PLATFORM_ID } from '@angular/core';
@@ -112,7 +112,11 @@ export class QrLoginComponent implements OnInit, AfterViewInit {
   isBrowser = false;
   cedula: string | null = null;
 
-  constructor(private kiosk: KioskService, private injector: Injector) {
+  constructor(
+    private kiosk: KioskService, 
+    private injector: Injector,
+    private cd: ChangeDetectorRef
+    ) {
     this.isBrowser = isPlatformBrowser(this.injector.get(PLATFORM_ID));
   }
 
@@ -133,20 +137,22 @@ export class QrLoginComponent implements OnInit, AfterViewInit {
           const qrValue = firstResult.value;
           
           if (qrValue && qrValue.trim().length > 0) {
-            this.scannedOnce = true;
+            this.scannedOnce = true; // Bloquea escaneos inmediatos y repetidos
             // Parsear el valor del QR para obtener solo el DNI
             const dni = qrValue.split('#')[0];
             this.cedula = dni;
             console.log('Cédula escaneada y almacenada:', this.cedula);
-            this.message = `QR escaneado: ${qrValue}`;
+            this.message = `Bienvenido (ID): ${this.cedula}`;
+            this.cd.detectChanges(); // Forzar la actualización de la vista
+
             this.kiosk.loginWithQr(qrValue); // Se sigue enviando el valor completo al servicio
             
-            // DO NOT STOP SCANNER - keep it running for continuous scanning
-            // The scannedOnce flag prevents duplicate detections
-            
+            // Después de 3 segundos, prepara el escáner para la siguiente lectura
             setTimeout(() => {
-              this.message = `Bienvenido (ID): ${this.cedula}`;
-            }, 500);
+              this.message = 'Apunta la cámara al código QR del estudiante.';
+              this.scannedOnce = false; // Permite un nuevo escaneo
+              this.cd.detectChanges(); // Forzar la actualización de la vista
+            }, 3000); // 3 segundos de espera
           }
         }
       });
