@@ -25,7 +25,7 @@ import { KioskService } from './kiosk.service';
       <div class="camera-frame" *ngIf="!isBrowser" style="background: #333; display: flex; align-items: center; justify-content: center;">
         <p style="color: #999;">Escáner no disponible en este contexto</p>
       </div>
-      <p *ngIf="message" class="status-message">{{ message }}</p>
+      <p *ngIf="message" class="status-message" [class.welcome-message]="isWelcome">{{ message }}</p>
     </div>
   `,
   styles: [
@@ -100,6 +100,11 @@ import { KioskService } from './kiosk.service';
         padding: 8px 16px;
         border-radius: 20px;
         font-size: 0.9rem;
+        transition: background-color 0.3s ease;
+      }
+
+      .status-message.welcome-message {
+        background-color: #0056b3; /* Un azul notorio */
       }
     `,
   ],
@@ -111,6 +116,7 @@ export class QrLoginComponent implements OnInit, AfterViewInit {
   scannedOnce = false;
   isBrowser = false;
   cedula: string | null = null;
+  isWelcome = false;
 
   constructor(
     private kiosk: KioskService, 
@@ -142,6 +148,7 @@ export class QrLoginComponent implements OnInit, AfterViewInit {
             const dni = qrValue.split('#')[0];
             this.cedula = dni;
             console.log('Cédula escaneada y almacenada:', this.cedula);
+            this.isWelcome = true;
             this.message = `Bienvenido (ID): ${this.cedula}`;
             this.cd.detectChanges(); // Forzar la actualización de la vista
 
@@ -149,6 +156,7 @@ export class QrLoginComponent implements OnInit, AfterViewInit {
             
             // Después de 3 segundos, prepara el escáner para la siguiente lectura
             setTimeout(() => {
+              this.isWelcome = false;
               this.message = 'Apunta la cámara al código QR del estudiante.';
               this.scannedOnce = false; // Permite un nuevo escaneo
               this.cd.detectChanges(); // Forzar la actualización de la vista
