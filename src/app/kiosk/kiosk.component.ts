@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { QrLoginComponent } from './qr-login.component';
 import { KioskService } from './kiosk.service';
 
+// KioskComponent: Componente principal para la interfaz de quiosco
+// Muestra la interfaz de usuario para la verificación de estudiantes mediante códigos QR.
+
 @Component({
   selector: 'app-kiosk',
   standalone: true,

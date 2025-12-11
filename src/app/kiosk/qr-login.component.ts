@@ -5,6 +5,8 @@ import { PLATFORM_ID } from '@angular/core';
 import { NgxScannerQrcodeComponent, ScannerQRCodeResult } from 'ngx-scanner-qrcode';
 import { KioskService } from './kiosk.service';
 
+// QrLoginComponent: Componente para el escaneo e inicio de sesión mediante código QR
+
 @Component({
   selector: 'app-qr-login',
   standalone: true,
@@ -109,13 +111,21 @@ import { KioskService } from './kiosk.service';
     `,
   ],
 })
+
+// Componente para el escaneo e inicio de sesión mediante código QR
+// Utiliza ngx-scanner-qrcode para capturar y procesar códigos QR
+
 export class QrLoginComponent implements OnInit, AfterViewInit {
   @ViewChild('scanner') scanner!: NgxScannerQrcodeComponent;
-  
+  // Estado del mensaje de estado para el usuario
   message = 'Apunta la cámara al código QR del estudiante.';
+  // Indica si ya se ha escaneado un código para evitar múltiples lecturas rápidas
   scannedOnce = false;
+  // Indica si el entorno es de navegador
   isBrowser = false;
+  // Cédula escaneada
   cedula: string | null = null;
+  // Indica si se muestra un mensaje de bienvenida
   isWelcome = false;
 
   constructor(
@@ -148,6 +158,7 @@ export class QrLoginComponent implements OnInit, AfterViewInit {
             const dni = qrValue.split('#')[0];
             this.cedula = dni;
             console.log('Cédula escaneada y almacenada:', this.cedula);
+            // Mostrar mensaje de bienvenida
             this.isWelcome = true;
             this.message = `Bienvenido (ID): ${this.cedula}`;
             this.cd.detectChanges(); // Forzar la actualización de la vista
@@ -165,7 +176,7 @@ export class QrLoginComponent implements OnInit, AfterViewInit {
         }
       });
 
-      // Wait for WASM to be ready, then start scanner
+      // Mensaje por consola de navegador para escaner listo
       if (this.scanner.isReady) {
         this.scanner.isReady.subscribe(() => {
           if (this.scanner && !this.scanner.isStart) {

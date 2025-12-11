@@ -6,6 +6,9 @@ export interface KioskPayload {
   parsed?: any;
 }
 
+// KioskService: Servicio para gestionar el estado y la lógica del quiosco
+// Maneja el inicio de sesión mediante códigos QR y mantiene la información del estudiante autenticado.
+
 @Injectable({ providedIn: 'root' })
 export class KioskService {
   // Holds the currently-logged student id (as read from QR) for quick display
