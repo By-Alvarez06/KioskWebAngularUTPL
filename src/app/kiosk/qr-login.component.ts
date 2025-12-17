@@ -382,7 +382,10 @@ export class QrLoginComponent implements AfterViewInit, OnDestroy {
 
     if (rawValue) {
       this.lastScanTime = now;
-      this.handleSuccessfulScan(rawValue);
+      // Forzar la ejecución dentro de la zona de Angular para que los timeouts y observables funcionen correctamente
+      this.ngZone.run(() => {
+        this.handleSuccessfulScan(rawValue);
+      });
     }
   }
 
@@ -394,13 +397,13 @@ export class QrLoginComponent implements AfterViewInit, OnDestroy {
     // Process login
     this.kiosk.loginWithQr(code);
 
-    // Reset UI after 4 seconds (para que vea la hora de entrada)
+    // Reset UI after 3 seconds (para que vea la hora de entrada)
     setTimeout(() => {
       this.isSuccess = false;
       this.statusMessage = 'Escáner listo. Apunte al código.';
       // No hacer logout - dejar que el siguiente QR cierre la sesión anterior
       this.cd.detectChanges();
-    }, 4000);
+    }, 3000);
   }
 
   onError(e: any) {

@@ -1,4 +1,4 @@
-import { Component, OnInit, Injector, Inject, PLATFORM_ID, ViewChild } from '@angular/core';
+import { Component, OnInit, Injector, Inject, PLATFORM_ID, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { QrLoginComponent } from './qr-login.component';
 import { KioskService } from './kiosk.service';
@@ -356,12 +356,14 @@ export class KioskComponent implements OnInit {
   constructor(
     private kiosk: KioskService, 
     @Inject(PLATFORM_ID) private platformId: Object,
-    private logging: LoggingService
+    private logging: LoggingService,
+    private cd: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.kiosk.student$.subscribe((id) => {
       this.studentId = id;
+      this.cd.detectChanges(); // Forzar actualización inmediata
       
       // Si hay un studentId, iniciar el timer de 5 segundos
       if (id) {
@@ -370,29 +372,34 @@ export class KioskComponent implements OnInit {
           clearTimeout(this.autoHideTimer);
         }
         
-        // Nuevo timer de 5 segundos - ocultar toda la información
+        // Nuevo timer de 3 segundos - ocultar toda la información
         this.autoHideTimer = setTimeout(() => {
           this.studentId = null;
           this.checkInTime = null;
           this.lastPayload = null;
-        }, 5000);
+          this.cd.detectChanges(); // Forzar actualización al limpiar
+        }, 3000);
       }
     });
     
     this.kiosk.lastPayload$.subscribe((p) => {
       this.lastPayload = p;
+      this.cd.detectChanges();
     });
     
     this.kiosk.checkInTime$.subscribe((time) => {
       this.checkInTime = time;
+      this.cd.detectChanges();
     });
 
     this.kiosk.registroMensaje$.subscribe((msg) => {
       this.registroMensaje = msg;
+      this.cd.detectChanges();
     });
 
     this.kiosk.duracionSesion$.subscribe((duracion) => {
       this.duracionSesion = duracion;
+      this.cd.detectChanges();
     });
   }
 

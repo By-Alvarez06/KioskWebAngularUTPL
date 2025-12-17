@@ -138,7 +138,7 @@ export class KioskService {
     
     // Mensaje de entrada registrada
     this._registroMensaje.next('Entrada registrada');
-    setTimeout(() => this._registroMensaje.next(''), 5000);
+    setTimeout(() => this._registroMensaje.next(''), 3000);
 
     // Guardar en Firebase
     await this.saveCheckIn(id, checkInTime, payload, parsed?.cedula);
