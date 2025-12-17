@@ -4,6 +4,8 @@ import { PLATFORM_ID } from '@angular/core';
 import { NgxScannerQrcodeComponent, ScannerQRCodeConfig, ScannerQRCodeResult } from 'ngx-scanner-qrcode';
 import { KioskService } from './kiosk.service';
 
+// QrLoginComponent: Componente para el escaneo e inicio de sesión mediante código QR
+
 @Component({
   selector: 'app-qr-login',
   standalone: true,
