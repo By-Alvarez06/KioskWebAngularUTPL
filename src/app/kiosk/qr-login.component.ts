@@ -64,27 +64,25 @@ import { KioskService } from './kiosk.service';
       display: flex;
       flex-direction: column;
       border-radius: 12px;
+      align-items: center;
     }
     .camera-wrapper {
-      flex: 1;
       position: relative;
       width: 100%;
-      height: 100%;
+      flex: 1; /* Hace que el contenedor de la cámara ocupe el espacio vertical disponible */
       display: flex;
-      z-index: 1;
+      overflow: hidden; /* Recorta cualquier parte del video que se desborde */
+      border-radius: 12px; /* Aplica el borde redondeado al contenedor, no al video */
     }
     ::ng-deep ngx-scanner-qrcode {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      z-index: 1;
+      width: 100% !important;
+      height: 100% !important;
+      display: block !important;
     }
     ::ng-deep ngx-scanner-qrcode video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 12px;
-      z-index: 1;
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
     }
     .scanner-overlay {
       position: absolute;
