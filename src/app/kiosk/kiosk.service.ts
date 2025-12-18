@@ -17,6 +17,7 @@ export interface CheckInRecord {
   codigoQR: string;
   marcaTiempo?: Timestamp;
   marcaTiempoSalida?: Timestamp;
+  actividades?: string[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -47,6 +48,10 @@ export class KioskService {
   private _saveError = new BehaviorSubject<string | null>(null);
   readonly saveError$ = this._saveError.asObservable();
 
+  // Controlar visibilidad del input de actividades
+  private _showActivitiesInput = new BehaviorSubject<boolean>(false);
+  readonly showActivitiesInput$ = this._showActivitiesInput.asObservable();
+
   enableKioskMode = true;
   private previousCheckInId: string | null = null; // Para guardar el ID del registro anterior
   private previousCheckInTime: Date | null = null; // Guardar hora de entrada para calcular duración
@@ -66,24 +71,8 @@ export class KioskService {
     const esRegistroSalida = ultimoPayload === payload && this.previousCheckInId;
 
     if (esRegistroSalida) {
-      // Calcular duración de la sesión
-      if (this.previousCheckInTime) {
-        const duracionMs = new Date().getTime() - this.previousCheckInTime.getTime();
-        const duracionTexto = this.formatearDuracion(duracionMs);
-        this._duracionSesion.next(duracionTexto);
-      }
-
-      // Registrar salida
-      await this.closeCheckOut();
-      this._registroMensaje.next('Salida registrada');
-      this._studentId.next(null);
-      this._lastPayload.next(null);
-      this._checkInTime.next(null);
-      
-      setTimeout(() => {
-        this._registroMensaje.next('');
-        this._duracionSesion.next('');
-      }, 3000);
+      // DETECTADA SALIDA: En lugar de cerrar inmediatamente, mostramos el input de actividades
+      this._showActivitiesInput.next(true);
       return;
     }
 
@@ -138,6 +127,7 @@ export class KioskService {
     
     // Mensaje de entrada registrada
     this._registroMensaje.next('Entrada registrada');
+    this._showActivitiesInput.next(false); // Asegurar que se oculte el form si alguien escanea entrada
     setTimeout(() => this._registroMensaje.next(''), 3000);
 
     // Guardar en Firebase
@@ -159,6 +149,30 @@ export class KioskService {
     } else {
       return `${segundos}s`;
     }
+  }
+
+  // Nuevo método para finalizar la salida con actividades
+  async submitActivities(activities: string[]) {
+    // Calcular duración de la sesión
+    if (this.previousCheckInTime) {
+      const duracionMs = new Date().getTime() - this.previousCheckInTime.getTime();
+      const duracionTexto = this.formatearDuracion(duracionMs);
+      this._duracionSesion.next(duracionTexto);
+    }
+
+    // Registrar salida con actividades
+    await this.closeCheckOut(activities);
+    
+    this._registroMensaje.next('Salida registrada');
+    this._studentId.next(null);
+    this._lastPayload.next(null);
+    this._checkInTime.next(null);
+    this._showActivitiesInput.next(false); // Ocultar formulario
+    
+    setTimeout(() => {
+      this._registroMensaje.next('');
+      this._duracionSesion.next('');
+    }, 3000);
   }
 
   private async saveCheckIn(studentId: string, checkInTime: Date, qrCode: string, cedula?: string) {
@@ -205,19 +219,25 @@ export class KioskService {
     }
   }
 
-  private async closeCheckOut() {
+  private async closeCheckOut(activities: string[] = []) {
     try {
       if (!this.previousCheckInId) return;
       
       const checkOutTime = new Date();
       const docRef = doc(this.firebaseCore.firestore, 'registroAsistencia', this.previousCheckInId);
       
+      // Filtrar actividades vacías
+      const validActivities = activities.filter(a => a && a.trim().length > 0);
+
       await updateDoc(docRef, {
         horaSalida: checkOutTime,
-        marcaTiempoSalida: Timestamp.now()
+        marcaTiempoSalida: Timestamp.now(),
+        actividades: validActivities
       });
       
       console.log('✅ Salida registrada para:', this.previousCheckInId);
+      this.previousCheckInId = null; // Limpiar ID
+      this.previousCheckInTime = null;
     } catch (error: any) {
       console.error('Error guardando salida:', error);
     }
@@ -228,6 +248,7 @@ export class KioskService {
     this._lastPayload.next(null);
     this._checkInTime.next(null);
     this.closeCheckOut(); // Guardar check-out automáticamente
+    this._showActivitiesInput.next(false);
   }
 
   playSuccessSound(): void {

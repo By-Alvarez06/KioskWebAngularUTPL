@@ -1,5 +1,6 @@
 import { Component, OnInit, Injector, Inject, PLATFORM_ID, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { QrLoginComponent } from './qr-login.component';
 import { KioskService } from './kiosk.service';
 import { LoggingService } from '../logging/logging.service';
@@ -10,7 +11,7 @@ import { LoggingService } from '../logging/logging.service';
 @Component({
   selector: 'app-kiosk',
   standalone: true,
-  imports: [CommonModule, QrLoginComponent],
+  imports: [CommonModule, QrLoginComponent, FormsModule],
   template: `
     <div class="kiosk-root">
       <div class="wave-bg"></div>
@@ -32,7 +33,7 @@ import { LoggingService } from '../logging/logging.service';
       </header>
       
       <main class="kiosk-content">
-        <div class="scanner-section">
+        <div class="scanner-section" *ngIf="!showActivitiesInput">
           <div class="scanner-container">
             <app-qr-login #qrLogin></app-qr-login>
           </div>
@@ -65,6 +66,23 @@ import { LoggingService } from '../logging/logging.service';
                 </ng-container>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Sección de Ingreso de Actividades (Reemplaza al escáner al salir) -->
+        <div class="activities-section" *ngIf="showActivitiesInput">
+          <div class="activities-card">
+            <h2>Registro de Salida</h2>
+            <p class="mb-4">Por favor, ingrese las actividades realizadas durante la sesión:</p>
+            
+            <div class="activity-inputs">
+              <div class="input-group mb-3" *ngFor="let act of activities; let i = index; trackBy: trackByIndex">
+                <span class="input-group-text">{{ i + 1 }}</span>
+                <input type="text" class="form-control" [(ngModel)]="activities[i]" placeholder="Descripción de la actividad">
+              </div>
+            </div>
+
+            <button class="btn-submit" (click)="submitActivities()">Registrar Salida</button>
           </div>
         </div>
       </main>
@@ -127,6 +145,40 @@ import { LoggingService } from '../logging/logging.service';
         box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         padding: 2.5rem;
         animation: fadeInUp 0.5s ease-out;
+      }
+      
+      .activities-section {
+        width: 100%;
+        max-width: 800px;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        padding: 3rem;
+        animation: fadeInUp 0.5s ease-out;
+      }
+
+      .activities-card h2 {
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+        text-align: center;
+      }
+
+      .btn-submit {
+        width: 100%;
+        padding: 1rem;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        cursor: pointer;
+        margin-top: 1.5rem;
+        transition: background 0.3s;
+      }
+      
+      .btn-submit:hover {
+        background: var(--secondary-color);
       }
 
       @keyframes fadeInUp {
@@ -351,6 +403,8 @@ export class KioskComponent implements OnInit {
   checkInTime: Date | null = null;
   registroMensaje: string = '';
   duracionSesion: string = '';
+  showActivitiesInput = false;
+  activities: string[] = ['', '', '', '', ''];
   private autoHideTimer: any;
 
   constructor(
@@ -401,6 +455,15 @@ export class KioskComponent implements OnInit {
       this.duracionSesion = duracion;
       this.cd.detectChanges();
     });
+
+    this.kiosk.showActivitiesInput$.subscribe((show) => {
+      this.showActivitiesInput = show;
+      if (show) {
+        // Reiniciar actividades al mostrar
+        this.activities = ['', '', '', '', ''];
+      }
+      this.cd.detectChanges();
+    });
   }
 
   logout() {
@@ -410,5 +473,13 @@ export class KioskComponent implements OnInit {
     if (this.qrLogin) {
       this.qrLogin.resetScanner();
     }
+  }
+
+  submitActivities() {
+    this.kiosk.submitActivities(this.activities);
+  }
+
+  trackByIndex(index: number, obj: any): any {
+    return index;
   }
 }
