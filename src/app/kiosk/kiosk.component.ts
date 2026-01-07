@@ -73,6 +73,8 @@ import { LoggingService } from '../logging/logging.service';
         <div class="activities-section" *ngIf="showActivitiesInput">
           <div class="activities-card">
             <h2>Registro de Salida</h2>
+            <!-- Mensaje de Salida Personalizado - Nombre del estudiante -->
+            <p class="mb-4">Estudiante: <strong>{{ studentName || studentId }}</strong></p>
             <p class="mb-4">Por favor, ingrese las actividades realizadas durante la sesión:</p>
             
             <div class="activity-inputs">
