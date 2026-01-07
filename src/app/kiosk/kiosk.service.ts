@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { collection, addDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, Timestamp, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { CoreFirebaseService } from '../firebase/core';
 
 export interface KioskPayload {
@@ -66,21 +66,6 @@ export class KioskService {
   async loginWithQr(payload: string) {
     console.log('Kiosk Service loginWithQr called with:', payload);
     
-    // Verificar si es el mismo código (salida)
-    const ultimoPayload = this._lastPayload.value?.raw;
-    const esRegistroSalida = ultimoPayload === payload && this.previousCheckInId;
-
-    if (esRegistroSalida) {
-      // DETECTADA SALIDA: En lugar de cerrar inmediatamente, mostramos el input de actividades
-      this._showActivitiesInput.next(true);
-      return;
-    }
-
-    // Primero, cerrar la sesión anterior si existe
-    if (this.previousCheckInId) {
-      await this.closeCheckOut();
-    }
-
     // Parsear el QR
     let parsed: any = undefined;
     try {
@@ -120,6 +105,24 @@ export class KioskService {
     }
     if (!id) id = payload;
     
+    // Consultar Firebase para ver si hay una sesión activa para este estudiante
+    const activeSession = await this.checkActiveSession(id);
+
+    if (activeSession) {
+      // DETECTADA SALIDA: En lugar de cerrar inmediatamente, mostramos el input de actividades
+      this.previousCheckInId = activeSession.id;
+      
+      // Recuperar la hora de entrada para calcular duración
+      if (activeSession.data.horaEntrada && activeSession.data.horaEntrada.toDate) {
+        this.previousCheckInTime = activeSession.data.horaEntrada.toDate();
+      } else {
+        this.previousCheckInTime = new Date(activeSession.data.horaEntrada);
+      }
+
+      this._showActivitiesInput.next(true);
+      return;
+    }
+
     this._studentId.next(id);
     const checkInTime = new Date();
     this._checkInTime.next(checkInTime);
@@ -132,6 +135,34 @@ export class KioskService {
 
     // Guardar en Firebase
     await this.saveCheckIn(id, checkInTime, payload, parsed?.cedula);
+  }
+
+  // Metodo para verificar si hay una sesión activa (sin hora de salida) y registrar salida
+  private async checkActiveSession(studentId: string): Promise<{ id: string, data: any } | null> {
+    try {
+      const attendanceRef = collection(this.firebaseCore.firestore, 'registroAsistencia');
+      // Buscar el último registro de este estudiante
+      const q = query(
+        attendanceRef,
+        where('idEstudiante', '==', studentId),
+        orderBy('horaEntrada', 'desc'),
+        limit(1)
+      );
+
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const docSnap = querySnapshot.docs[0];
+        const data = docSnap.data();
+        // Si no tiene hora de salida, es una sesión activa
+        if (!data['horaSalida']) {
+          return { id: docSnap.id, data };
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Error verificando sesión activa:', error);
+      return null;
+    }
   }
 
   private formatearDuracion(duracionMs: number): string {
