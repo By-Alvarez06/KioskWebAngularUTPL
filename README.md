@@ -139,6 +139,24 @@ Este proyecto fue generado con [Angular CLI](https://github.com/angular/angular-
 
 ---
 
+## Registro de Cambios – 07/01/2026
+
+- **Mejora en la Experiencia de Usuario y Personalización**:
+    - **Consulta de Nombre del Estudiante**: Al escanear un QR, el sistema ahora utiliza la cédula del estudiante para consultar la colección `estudiantes` en Firestore y obtener su nombre completo. La consulta se realiza directamente por el ID del documento, que corresponde a la cédula, para máxima eficiencia.
+    - **Mensaje de Bienvenida Personalizado**: Se ha reemplazado el mensaje genérico "Codigo escaneado:..." por un saludo personalizado. Ahora, la interfaz muestra "Bienvenido: [Nombre del Estudiante]".
+    - **Visualización de Nombre en Tarjeta**: En la tarjeta de "Verificación Exitosa", se muestra el nombre completo del estudiante en lugar de su ID, haciendo la interfaz más clara y amigable.
+
+- **Actualizaciones Técnicas**:
+    - **`kiosk.service.ts`**: Se refactorizó para incluir un nuevo método `getStudentName(studentId)`, que utiliza `getDoc` de Firestore para una búsqueda directa por ID. Se añadió un nuevo observable `studentName$` para comunicar el nombre del estudiante a la UI.
+    - **`kiosk.component.ts`**: El componente ahora se suscribe a `studentName$` para recibir el nombre y lo muestra dinámicamente en la plantilla. Se actualizó la lógica para limpiar el nombre del estudiante al cerrar sesión.
+
+### Implementado por
+
+- Byron Alvarez - Desarrollo en Angular.
+- Asistente de IA de Gemini – desarrollo de la funcionalidad y actualización de la documentación.
+
+---
+
 ## Base de Datos (Firestore) – Detalle de Manejo
 
 Esta aplicación utiliza **Firebase Firestore** para registrar la asistencia mediante entradas y salidas asociadas a un código QR.

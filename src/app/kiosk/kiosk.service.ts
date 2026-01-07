@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { collection, addDoc, updateDoc, doc, Timestamp, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, Timestamp, query, where, orderBy, limit, getDocs, getDoc } from 'firebase/firestore';
 import { CoreFirebaseService } from '../firebase/core';
 
 export interface KioskPayload {
@@ -25,6 +25,10 @@ export class KioskService {
   // Holds the currently-logged student id (as read from QR) for quick display
   private _studentId = new BehaviorSubject<string | null>(null);
   readonly student$ = this._studentId.asObservable();
+
+  // Guarda el nombre completo del estudiante (si está disponible)
+  private _studentName = new BehaviorSubject<string | null>(null);
+  readonly studentName$ = this._studentName.asObservable();
 
   // Holds the last scanned payload (raw + optionally parsed JSON)
   private _lastPayload = new BehaviorSubject<KioskPayload | null>(null);
@@ -105,6 +109,10 @@ export class KioskService {
     }
     if (!id) id = payload;
     
+    // Consultar el nombre del estudiante
+    const studentName = await this.getStudentName(id);
+    this._studentName.next(studentName);
+
     // Consultar Firebase para ver si hay una sesión activa para este estudiante
     const activeSession = await this.checkActiveSession(id);
 
@@ -129,7 +137,7 @@ export class KioskService {
     this.previousCheckInTime = checkInTime; // Guardar para calcular duración después
     
     // Mensaje de entrada registrada
-    this._registroMensaje.next('Entrada registrada');
+    this._registroMensaje.next(studentName ? `Bienvenido: ${studentName}`: 'Entrada registrada');
     this._showActivitiesInput.next(false); // Asegurar que se oculte el form si alguien escanea entrada
     setTimeout(() => this._registroMensaje.next(''), 3000);
 
@@ -206,6 +214,28 @@ export class KioskService {
     }, 3000);
   }
 
+  // Nuevo método para obtener el nombre del estudiante desde Firestore
+  async getStudentName(studentId: string): Promise<string | null> {
+    try {
+      const studentDocRef = doc(this.firebaseCore.firestore, 'estudiantes', studentId);
+      const docSnap = await getDoc(studentDocRef);
+
+      if (docSnap.exists()) {
+        const studentData = docSnap.data();
+        const nombres = studentData['nombres'] || '';
+        const apellidos = studentData['apellidos'] || '';
+        const fullName = `${nombres} ${apellidos}`.trim();
+        return fullName || null;
+      } else {
+        console.warn(`No se encontró estudiante con ID (cédula): ${studentId}`);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error buscando estudiante por ID:', error);
+      return null;
+    }
+  }
+
   private async saveCheckIn(studentId: string, checkInTime: Date, qrCode: string, cedula?: string) {
     try {
       this._saveStatus.next('saving');
@@ -276,6 +306,7 @@ export class KioskService {
 
   logout() {
     this._studentId.next(null);
+    this._studentName.next(null); // Limpiar el nombre del estudiante
     this._lastPayload.next(null);
     this._checkInTime.next(null);
     this.closeCheckOut(); // Guardar check-out automáticamente

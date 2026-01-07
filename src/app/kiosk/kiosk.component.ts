@@ -54,8 +54,8 @@ import { LoggingService } from '../logging/logging.service';
             <div class="info-card success" *ngIf="studentId">
               <h2>Verificación Exitosa</h2>
               <div class="student-info">
-                <p class="info-label">ID Estudiante:</p>
-                <p class="info-value">{{ studentId }}</p>
+                <p class="info-label">Nombre Completo:</p>
+                <p class="info-value">{{ studentName || studentId }}</p>
                 <ng-container *ngIf="lastPayload?.parsed?.cedula">
                   <p class="info-label">Cédula:</p>
                   <p class="info-value">{{ lastPayload?.parsed?.cedula }}</p>
@@ -399,6 +399,7 @@ import { LoggingService } from '../logging/logging.service';
 export class KioskComponent implements OnInit {
   @ViewChild('qrLogin') qrLogin!: QrLoginComponent;
   studentId: string | null = null;
+  studentName: string | null = null;
   lastPayload: { raw: string; parsed?: any } | null = null;
   checkInTime: Date | null = null;
   registroMensaje: string = '';
@@ -429,11 +430,17 @@ export class KioskComponent implements OnInit {
         // Nuevo timer de 3 segundos - ocultar toda la información
         this.autoHideTimer = setTimeout(() => {
           this.studentId = null;
+          this.studentName = null; // Limpiar nombre también
           this.checkInTime = null;
           this.lastPayload = null;
           this.cd.detectChanges(); // Forzar actualización al limpiar
         }, 3000);
       }
+    });
+
+    this.kiosk.studentName$.subscribe((name) => {
+      this.studentName = name;
+      this.cd.detectChanges();
     });
     
     this.kiosk.lastPayload$.subscribe((p) => {
