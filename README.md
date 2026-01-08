@@ -338,7 +338,101 @@ En resumen, ahora tenemos un **punto de control** con persistencia en la nube, U
 - Modo offline con sincronización diferida.
 - Mejora de reglas de seguridad y roles.
 
+---
+
+## � Historial de Cambios e Implementaciones (Enero 2026)
+
+### ✅ Mejoras de Datos
+- **Eliminación de colección redundante**: Se removió la colección `registros` innecesaria. Sistema ahora usa solo `registroAsistencia` y `estudiantes`.
+- **Acumulación automática de horas**: Cada sesión cerrada suma automáticamente sus horas al `totalHoras` del estudiante en HMS (Horas, Minutos, Segundos).
+- **Migración de formato**: Se convirtieron datos heredados en formato decimal (ej: 2.34 horas) a formato legible HMS (ej: 2h 20m 24s).
+
+### 2. Acumulación Automática de Horas
+
+**Problema Identificado**: No existía sincronización automática entre las horas registradas en sesiones individuales (`registroAsistencia`) y el total acumulado del estudiante (`estudiantes.totalHoras`), generando inconsistencias en los reportes.
+
+**Solución Implementada**:
+- Cada vez que se cierra una sesión válida (≥5 minutos), el sistema:
+  1. Lee el `totalHoras` actual del estudiante
+  2. Convierte el valor HMS (Horas, Minutos, Segundos) a milisegundos
+  3. Suma la duración de la sesión cerrada
+  4. Convierte el resultado nuevamente a formato HMS
+  5. Actualiza automáticamente `estudiantes.totalHoras`
+
+**Formato Adoptado**: `"${horas}h ${minutos}m ${segundos}s"` (ej: `2h 47m 10s`)
+- **Ventaja**: Formato legible para humanos; elimina decimales confusos
+- **Persistencia**: Solo se guarda el formato HMS, nunca decimales
+
+**Beneficio**: Registro de horas siempre actualizado y consistente.
+
+### 3. Migración de Datos Heredados
+
+**Problema Identificado**: Sesiones antiguas contenían horas en formato decimal incompatible con HMS. Discrepancias detectadas en acumulados.
+
+**Solución Implementada**:
+- Script `migrate-data.ts` convierte decimales a HMS
+- Acumula todas las sesiones cerradas válidas automáticamente
+- Sincroniza totales en `estudiantes.totalHoras`
+
+**Resultados**: 2 registros convertidos, estudiante Erick Toledo: `2h 47m 10s` acumulado
+
+**Beneficio**: Base de datos limpia y consistente.
+
+### 4. Políticas de Control de Sesiones
+
+Se implementaron cuatro políticas críticas:
+
+#### 4.1 Auto-Cierre de Sesiones Caducadas (>24h)
+- Si un estudiante olvida salida y escanea entrada al día siguiente, sesión anterior se cierra como "caducada"
+- `totalHoras = 0` (no se cuentan horas fraudulentas)
+
+#### 4.2 Duración Mínima de Sesión (5 minutos)
+- Solo se cuentan sesiones ≥ 5 minutos
+- Sesiones más cortas se descartan automáticamente
+
+#### 4.3 Validación de QR por Fecha (Local, No UTC)
+- Código QR válido solo para el día actual
+- Validación con fecha local para evitar errores de zona horaria
+
+#### 4.4 Actividades Obligatorias
+- No se permite cerrar sesión sin actividad
+- Garantiza trazabilidad completa
+
+### 5. Mejoras de Interfaz de Usuario
+
+#### 5.1 Botón Rojo Destacado
+- Color sólido rojo (#EF4444) para máxima visibilidad
+- Mejora UX significativamente
+
+#### 5.2 Overlay de Validación (2 segundos)
+- Mensaje de error centrado con fondo opacificado
+- Auto-desaparece tras 2 segundos
+- Feedback no-intrusivo y claro
+
+#### 5.3 Duración en Tiempo Real
+- Muestra duración exacta en HMS (ej: `0h 18m 41s`)
+- Genera confianza en el usuario
+
+### 6. Herramientas de Mantenimiento de Datos
+
+**verify-accumulation.ts**: Valida integridad comparando totales registrados vs suma de sesiones. Reporta ✅ o ❌
+
+**migrate-data.ts**: Sincroniza datos heredados y acumula horas automáticamente
+
+### 7. Documentación Integral
+
+- **POLICIES.md**: Políticas, reglas de negocio y scripts
+- **FIREBASE_STRUCTURE.md**: Colecciones, campos e índices
+- **README.md**: Este informe
+
+---
+
+## �📋 Documentación
+
+Consulta los siguientes archivos para información detallada:
+- **[POLICIES.md](POLICIES.md)** - Políticas, reglas de negocio y scripts de mantenimiento
+- **[FIREBASE_STRUCTURE.md](FIREBASE_STRUCTURE.md)** - Estructura de Firestore y colecciones
+
 ## Créditos
 
-- **Santy (santyT2)**: Desarrollo funcional, UI/UX, pruebas y operaciones locales.
-- **GitHub Copilot**: Asistencia técnica, resolución de conflictos, documentación y soporte en flujo.
+- **Santy (santyT2)**: Desarrollo funcional, UI/UX, pruebas y operaciones locales, Asistencia técnica, resolución de conflictos, documentación y soporte en flujo.

@@ -1,141 +1,117 @@
-# 📊 Estructura Firebase - Check-In/Check-Out
+# 📚 Estructura Firebase actualizada
 
-## Colección: `checkIn`
+Este proyecto usa únicamente dos colecciones en Firestore:
 
-Cada documento en esta colección representa un registro de entrada/salida de un estudiante.
-
-### Estructura del Documento:
-
-```json
-{
-  "id": "auto-generado",
-  "studentId": "1234567890",
-  "cedula": "1234567890",
-  "checkInTime": "2024-12-16T14:30:00Z",
-  "checkOutTime": "2024-12-16T14:45:00Z",
-  "qrCode": "1234567890#16122024",
-  "timestamp": "2024-12-16T14:30:00.000Z",
-  "checkOutTimestamp": "2024-12-16T14:45:00.000Z"
-}
-```
-
-### Campos:
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `studentId` | String | ID del estudiante (generalmente la cédula) |
-| `cedula` | String | Cédula del estudiante |
-| `checkInTime` | Timestamp | Fecha y hora de entrada |
-| `checkOutTime` | Timestamp | Fecha y hora de salida (se agrega después) |
-| `qrCode` | String | Código QR escaneado |
-| `timestamp` | Timestamp | Timestamp de FireServer al crear |
-| `checkOutTimestamp` | Timestamp | Timestamp de FireServer al actualizar salida |
+- `registroAsistencia`: registros de entrada/salida y actividades.
+- `estudiantes`: catálogo de estudiantes con atributos administrativos.
 
 ---
 
-## Flujo de Datos:
+## Colección: `estudiantes`
 
-### 1️⃣ Escanea QR (Check-In)
+Atributos por documento (ID del documento = cédula del estudiante):
 
-```
-Usuario escanea QR
-        ↓
-loginWithQr() se llama
-        ↓
-Se crea nuevo documento en checkIn
-        ↓
-Documento guardado con:
-  - studentId
-  - checkInTime (ahora)
-  - qrCode
-  - timestamp (servidor)
-        ↓
-ID del documento guardado en previousCheckInId
-```
+| Campo | Tipo | Ejemplo |
+|-------|------|---------|
+| `actividad` | String | "Sistema de Registro" |
+| `apellidos` | String | "Alvarez Elizalde" |
+| `carrera` | String | "Ingeniería en Ciencias de la Computación" |
+| `correo` | String | "bvalvarez1@utpl.edu.ec" |
+| `estado` | String | "Activo" |
+| `modalidad` | String | "Presencial" |
+| `nombres` | String | "Byron Vicente" |
+| `proyecto` | String | "Kiosko XRLab." |
+| `tipo` | String | "Practicum" |
+| `totalHoras` | Number | 0 |
 
-### 2️⃣ Escanea Otro QR (Check-Out + Check-In)
-
-```
-Usuario escanea otro QR
-        ↓
-loginWithQr() se llama de nuevo
-        ↓
-Verifica if (previousCheckInId)
-        ↓
-SI: Llama closeCheckOut()
-        ↓
-Actualiza documento anterior:
-  - checkOutTime (ahora)
-  - checkOutTimestamp (servidor)
-        ↓
-Crea NUEVO documento para este QR
-        ↓
-Nuevo ID guardado en previousCheckInId
-```
+> Nota: `totalHoras` puede usarse para acumular horas totales del estudiante si se desea.
 
 ---
 
-## Consultas útiles en Firebase Console:
+## Colección: `registroAsistencia`
 
-### 📋 Ver todos los check-ins de hoy:
+Cada documento representa una sesión de asistencia (entrada/salida) con campos:
 
-```javascript
-db.collection('checkIn')
-  .where('timestamp', '>=', new Date().setHours(0,0,0,0))
-  .orderBy('timestamp', 'desc')
-  .get()
+| Campo | Tipo | Ejemplo |
+|-------|------|---------|
+| `idEstudiante` | String | "1105749939" |
+| `cedula` | String | "1105749939" |
+| `codigoQR` | String | "1105749939#17122025" |
+| `horaEntrada` | Timestamp/Date | 2025-12-17 22:27:46 UTC-5 |
+| `horaSalida` | Timestamp/Date | 2025-12-17 22:28:15 UTC-5 |
+| `actividades` | Array<String> | ["Modelado 3D", "Pruebas de escaneo"] |
+| `totalHoras` | String | "0h 7m 48s" |
+| `estadoSesion` | String | "activa" | "cerrada" | "caducada" |
+| `cerradaAutomaticamente` | Boolean | true/false |
+| `motivoCierre` | String | "superó 24h sin salida" |
+
+> Cambios: Se eliminan `marcaTiempo` y `marcaTiempoSalida` por redundantes. Se agrega `totalHoras` y `totalHorasFormato` (legible "Hh Mm Ss") calculados al registrar la salida.
+> Se agregan campos de estado para controlar sesiones caducadas (>24h sin salida).
+
+---
+
+## Flujo de Datos
+
+1️⃣ Check-In (entrada)
+
+- Se crea un documento en `registroAsistencia` con: `idEstudiante`, `cedula`, `codigoQR`, `horaEntrada` y `totalHoras: 0`.
+
+2️⃣ Check-Out (salida)
+
+- Se actualiza el mismo documento con: `horaSalida`, `actividades` y `totalHoras` calculado.
+
+3️⃣ Auto-cierre por caducidad (>24h)
+
+- Si al escanear un nuevo QR existe una sesión activa cuya `horaEntrada` supera 24 horas sin `horaSalida`, se cierra automáticamente:
+  - `estadoSesion = 'caducada'`
+  - `cerradaAutomaticamente = true`
+  - `motivoCierre = 'superó 24h sin salida'`
+  - `totalHoras = 0`
+  - No se solicita actividades.
+
+> Cálculo de `totalHoras`: diferencia entre `horaEntrada` y `horaSalida` en horas; se guarda con dos decimales.
+
+---
+
+## Consultas útiles
+
+### Última sesión activa de un estudiante
+
+```ts
+query(
+  collection(db, 'registroAsistencia'),
+  where('idEstudiante', '==', studentId),
+  orderBy('horaEntrada', 'desc'),
+  limit(1)
+)
 ```
 
-### 👤 Ver registros de un estudiante específico:
+### Sesiones con salida registrada y sus horas
 
-```javascript
-db.collection('checkIn')
-  .where('studentId', '==', '1234567890')
-  .orderBy('checkInTime', 'desc')
-  .limit(10)
-  .get()
-```
-
-### ⏱️ Ver estudiantes actualmente dentro (sin check-out):
-
-```javascript
-db.collection('checkIn')
-  .where('checkOutTime', '==', null)
-  .orderBy('checkInTime', 'desc')
-  .get()
-```
-
-### 📊 Tiempo promedio de permanencia:
-
-```javascript
-db.collection('checkIn')
-  .where('checkOutTime', '!=', null)
-  .get()
-  .then(snapshot => {
-    let totalTime = 0;
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      const duration = data.checkOutTime - data.checkInTime;
-      totalTime += duration;
-    });
-    console.log('Promedio:', totalTime / snapshot.size);
-  })
+```ts
+query(
+  collection(db, 'registroAsistencia'),
+  where('horaSalida', '!=', null),
+  orderBy('horaEntrada', 'desc')
+)
 ```
 
 ---
 
-## Seguridad - Reglas de Firestore:
-
-Recomendado agregar a `firestore.rules`:
+## Reglas de Firestore (sugeridas)
 
 ```firestore
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Solo lectura para administradores
-    match /checkIn/{document=**} {
-      allow read: if request.auth.token.admin == true;
-      allow create, update: if request.auth != null;
+    match /estudiantes/{id} {
+      allow read: if request.auth != null; // ajusta según necesidad
+      allow write: if request.auth != null; // solo apps autenticadas
+    }
+
+    match /registroAsistencia/{doc} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
     }
   }
 }
@@ -143,22 +119,13 @@ service cloud.firestore {
 
 ---
 
-## Cambios Realizados en el Código:
+## Índices
 
-✅ `KioskService` ahora conecta con Firebase  
-✅ `loginWithQr()` es async y guarda en BD  
-✅ `previousCheckInId` almacena el ID actual  
-✅ Al nuevo QR: cierra sesión anterior (check-out) + abre nueva  
-✅ `logout()` llama automáticamente `closeCheckOut()`  
-✅ Timestamps guardados en servidor (más precisos)  
-✅ Componente muestra `checkInTime` en formato HH:mm:ss  
+Para la consulta compuesta `where('idEstudiante'=='...') + orderBy('horaEntrada' desc)` es probable que Firestore solicite crear un índice compuesto. Sigue el enlace que provee el error para crear el índice.
 
 ---
 
-## Dashboard recomendado (próxima mejora):
+## Estado del código
 
-Crear página de administración para ver:
-- ✅ Estadísticas diarias
-- ✅ Estudiantes dentro/fuera
-- ✅ Reporte de entrada/salida
-- ✅ Descargar CSV
+- `KioskService` guarda entrada y salida en `registroAsistencia`, calcula `totalHoras` al salir y elimina `marcaTiempo*`.
+- `LoggingService` ya no escribe en `registros` para evitar redundancia.

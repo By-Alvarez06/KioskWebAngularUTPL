@@ -88,6 +88,13 @@ import { LoggingService } from '../logging/logging.service';
           </div>
         </div>
       </main>
+
+      <!-- Overlay de alerta centrada (solo para error de actividades) -->
+      <div class="alert-overlay" *ngIf="alertOverlayVisible">
+        <div class="alert-modal">
+          <div class="mensaje-texto">{{ registroMensaje }}</div>
+        </div>
+      </div>
     </div>
   `,
   styles: [
@@ -168,7 +175,7 @@ import { LoggingService } from '../logging/logging.service';
       .btn-submit {
         width: 100%;
         padding: 1rem;
-        background: var(--primary-color);
+        background: hsla(212, 84%, 60%, 1.00); /* rojo sólido */
         color: white;
         border: none;
         border-radius: 8px;
@@ -180,7 +187,7 @@ import { LoggingService } from '../logging/logging.service';
       }
       
       .btn-submit:hover {
-        background: var(--secondary-color);
+        background: #196ddbff; /* rojo más intenso al hover */
       }
 
       @keyframes fadeInUp {
@@ -395,6 +402,36 @@ import { LoggingService } from '../logging/logging.service';
           font-size: 1.2rem;
         }
       }
+
+      /* Overlay de alerta centrada */
+      .alert-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        animation: fadeIn 0.25s ease-in;
+      }
+
+      .alert-modal {
+        background: #FEE2E2; /* rojo claro, consistente con error-message */
+        color: #B91C1C;      /* rojo texto */
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        border: 2px solid #EF4444; /* borde rojo */
+        max-width: 600px;
+        width: 90%;
+        text-align: center;
+      }
+
+      .alert-modal .mensaje-texto {
+        font-weight: 700;
+        font-size: 1.1rem; /* igual al botón .btn-submit */
+      }
+
     `,
   ],
 })
@@ -409,6 +446,8 @@ export class KioskComponent implements OnInit {
   showActivitiesInput = false;
   activities: string[] = ['', '', '', '', ''];
   private autoHideTimer: any;
+  alertOverlayVisible = false;
+  private alertTimer: any;
 
   constructor(
     private kiosk: KioskService, 
@@ -457,6 +496,19 @@ export class KioskComponent implements OnInit {
 
     this.kiosk.registroMensaje$.subscribe((msg) => {
       this.registroMensaje = msg;
+      // Mostrar overlay centrado para mensajes de validación de actividades
+      const shouldOverlay = this.showActivitiesInput && !!msg && /(debes ingresar|actividad)/i.test(msg);
+      if (shouldOverlay) {
+        // Limpiar timer previo si existe
+        if (this.alertTimer) {
+          clearTimeout(this.alertTimer);
+        }
+        this.alertOverlayVisible = true;
+        // Ocultar overlay tras 2 segundos
+        this.alertTimer = setTimeout(() => {
+          this.alertOverlayVisible = false;
+        }, 2000);
+      }
       this.cd.detectChanges();
     });
 
