@@ -62,7 +62,7 @@ export class KioskService {
   private previousCheckInId: string | null = null; // Para guardar el ID del registro anterior
   private previousCheckInTime: Date | null = null; // Guardar hora de entrada para calcular duración
   private readonly MAX_SESSION_DURATION_MS = 24 * 60 * 60 * 1000; // 24 horas
-  private readonly MIN_SESSION_DURATION_MS = 5 * 60 * 1000; // 5 minutos
+  private readonly MIN_SESSION_DURATION_MS = 10 * 1000; // 10 segundos
 
   constructor(private firebaseCore: CoreFirebaseService) {}
 
