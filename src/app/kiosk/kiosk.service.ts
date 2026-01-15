@@ -62,7 +62,7 @@ export class KioskService {
   private previousCheckInId: string | null = null; // Para guardar el ID del registro anterior
   private previousCheckInTime: Date | null = null; // Guardar hora de entrada para calcular duración
   private readonly MAX_SESSION_DURATION_MS = 24 * 60 * 60 * 1000; // 24 horas
-  private readonly MIN_SESSION_DURATION_MS = 10 * 1000; // 10 segundos
+  private readonly MIN_SESSION_DURATION_MS = 5 * 60 * 1000; // 5 minutos
 
   constructor(private firebaseCore: CoreFirebaseService) {}
 
@@ -119,20 +119,34 @@ export class KioskService {
         return; // Rechazar procesamiento
       }
     }
-
     // Derivar student id
     let id: string | null = null;
     if (parsed) {
       if (parsed.cedula) {
         id = parsed.cedula;
+        console.log(`🔍 DEBUG: Cédula extraída del QR: "${id}"`);
       } else if (parsed.id || parsed.studentId || parsed.student_id) {
         id = parsed.id || parsed.studentId || parsed.student_id;
+        console.log(`🔍 DEBUG: ID extraído del JSON: "${id}"`);
       }
     }
-    if (!id) id = payload;
+    if (!id) {
+      id = payload;
+      console.log(`🔍 DEBUG: Usando payload completo como ID: "${id}"`);
+    }
     
     // Consultar el nombre del estudiante
     const studentName = await this.getStudentName(id);
+    
+    // VALIDACIÓN DE SEGURIDAD: Rechazar QR si el estudiante no está registrado
+    if (!studentName) {
+      const errorMsg = `QR no registrado. La cédula ${id} no se encuentra en el sistema.`;
+      console.warn(errorMsg);
+      this._registroMensaje.next(errorMsg);
+      setTimeout(() => this._registroMensaje.next(''), 4000);
+      return; // Rechazar procesamiento
+    }
+    
     this._studentName.next(studentName);
 
     // Consultar Firebase para ver si hay una sesión activa para este estudiante
@@ -263,21 +277,26 @@ export class KioskService {
   // Nuevo método para obtener el nombre del estudiante desde Firestore
   async getStudentName(studentId: string): Promise<string | null> {
     try {
+      console.log(`🔍 DEBUG: Buscando estudiante con ID: "${studentId}" (tipo: ${typeof studentId}, largo: ${studentId.length})`);
+      
       const studentDocRef = doc(this.firebaseCore.firestore, 'estudiantes', studentId);
       const docSnap = await getDoc(studentDocRef);
 
       if (docSnap.exists()) {
         const studentData = docSnap.data();
+        console.log(`✅ DEBUG: Documento encontrado. Datos:`, studentData);
         const nombres = studentData['nombres'] || '';
         const apellidos = studentData['apellidos'] || '';
         const fullName = `${nombres} ${apellidos}`.trim();
+        console.log(`✅ DEBUG: Nombre completo: "${fullName}"`);
         return fullName || null;
       } else {
-        console.warn(`No se encontró estudiante con ID (cédula): ${studentId}`);
+        console.warn(`❌ DEBUG: No se encontró documento para ID: "${studentId}"`);
+        console.warn(`❌ DEBUG: Verificar que exista en colección "estudiantes" con exactamente ese ID`);
         return null;
       }
     } catch (error) {
-      console.error('Error buscando estudiante por ID:', error);
+      console.error('❌ Error buscando estudiante por ID:', error);
       return null;
     }
   }

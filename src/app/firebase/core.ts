@@ -2,7 +2,7 @@
 
 import { Injectable } from '@angular/core';
 import { initializeApp, FirebaseApp, getApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
+import { getAuth, Auth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 
 // ESTA ES LA LÍNEA CRÍTICA: Cambia solo la carpeta 'firebase' a la carpeta 'environments'
@@ -29,15 +29,30 @@ export class CoreFirebaseService {
       this.firestore = getFirestore(this.app);
       
       console.log('Firebase App Inicializada y servicios disponibles.');
-    } else {
-      // Reusar la app existente si ya está inicializada
-      this.app = getApp();
-      this.auth = getAuth(this.app);
-      this.firestore = getFirestore(this.app);
-    }
-  }
+      
+      // 3. Autenticación anónima automática
+      this.initAnonymousAuth();
+    } else {
+      // Reusar la app existente si ya está inicializada
+      this.app = getApp();
+      this.auth = getAuth(this.app);
+      this.firestore = getFirestore(this.app);
+    }
+  }
 
-  getApp(): FirebaseApp {
-    return this.app;
-  }
-}
+  private async initAnonymousAuth() {
+    try {
+      // Verificar si ya hay un usuario autenticado
+      onAuthStateChanged(this.auth, async (user) => {
+        if (user) {
+          console.log('✅ Usuario autenticado:', user.isAnonymous ? 'Anónimo' : user.uid);
+        } else {
+          console.log('⏳ Autenticando anónimamente...');
+          const result = await signInAnonymously(this.auth);
+          console.log('✅ Autenticación anónima exitosa:', result.user.uid);
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error en autenticación anónima:', error);
+    }
+  }
